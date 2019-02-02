@@ -2,7 +2,7 @@ import numpy as np
 import cv2 as cv
 img = cv.imread('star.jpg',0)
 ret,thresh = cv.threshold(img,127,255,0)
-contours, hierarchy = cv.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+contours, hierarchy = cv.findContours(thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
 cnt = contours[0]
 M = cv.moments(cnt)
 print(M)
