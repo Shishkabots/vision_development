@@ -1,5 +1,3 @@
-# DO NOT RUN THIS CODE ON IMAGES OTHER THAN CHESSBOARDS (the images will be deleted, but now they won't be)
-
 import numpy as np
 import cv2
 import glob
@@ -41,7 +39,7 @@ for fname in images:
         #print "removed file", fname
 
 cv2.destroyAllWindows()
-print len(images)
+#print len(images)
 
 
 # Function for calibrating the camera- returns camera matrix, distortion coeffs, rot/trans vectors
@@ -69,11 +67,4 @@ for fname in images:
     dst = dst[y:y+h, x:x+w]
     cv2.imwrite(fname[:-4] + '_calibrated.png', dst)
 
-# Fix the issue
-tot_error = 0
-for i in xrange(len(objpoints)):
-    imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
-    error = cv2.norm(imgpoints[i],imgpoints2, cv2.NORM_L2)/len(imgpoints2)
-    tot_error += error
-
-print "mean error: ", tot_error/len(objpoints)
+    
