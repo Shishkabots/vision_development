@@ -45,6 +45,7 @@ int count = 1;
 for Tup in tups
 	if (count == 5)
 		print Tup.distance;
+	count++
 #NEW CODE FINISHES HERE
 
 
