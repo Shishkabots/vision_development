@@ -10,7 +10,8 @@ class Tup:
 		self.point2 = point2
 
 im = cv2.imread("woodslab.jpg")
-gray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
+
+gray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY);
 gray = cv2.GaussianBlur(gray, (5, 5), 0)
 bin = cv2.threshold(gray, 120, 255, 1) # inverted threshold (light obj on dark bg)
 bin = cv2.dilate(bin, None)  # fill some holes
