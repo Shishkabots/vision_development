@@ -22,7 +22,6 @@ bin = cv2.erode(bin, None)   # dilate made our shape larger, revert that
 bin = cv2.erode(bin, None)
 bin, contours, hierarchy = cv2.findContours(bin, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
-
 rc = cv2.minAreaRect(contours[0])
 box = cv2.boxPoints(rc)
 
@@ -60,6 +59,8 @@ for Tup in tups #find the tuple with the 5th largest distance
 	count += 1
 #NEW CODE FINISHES HERE
 
+cv2.waitKey()
+
 
 '''
 for p in box:
@@ -69,3 +70,5 @@ for p in box:
 cv2.imshow("plank", im)
 cv2.waitKey()
 '''
+
+
