@@ -12,6 +12,7 @@ class Tup:
 #NEW CODE ENDS
 
 im = cv2.imread("woodslab.jpg")
+
 gray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY);
 gray = cv2.GaussianBlur(gray, (5, 5), 0)
 bin = cv2.threshold(gray,120,255,1) # inverted threshold (light obj on dark bg)
@@ -26,7 +27,7 @@ rc = cv2.minAreaRect(contours[0])
 box = cv2.boxPoints(rc)
 
 #NEW CODE STARTS
-tups = [] #list of tuples
+tups = [] #list of tuples (each tuple consists of 2 points)
 '''
 4 3
 4 2
@@ -35,6 +36,7 @@ tups = [] #list of tuples
 3 1
 2 1
 '''
+
 int count = 0;
 int count2 = 0;
 for i in box:
@@ -50,7 +52,7 @@ for i in box:
 		count2 += 1;
 	count += 1;
 	count2 = 0;
-tups.sort(key=distance))
+tups.sort(key=distance)
 int count = 1;
 for Tup in tups #find the tuple with the 5th largest distance
 	if (count == 5)
@@ -67,5 +69,3 @@ for p in box:
 cv2.imshow("plank", im)
 cv2.waitKey()
 '''
-
-
