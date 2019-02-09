@@ -1,7 +1,18 @@
+'''
+Currently outstanding questions: should we be converting the image to gray in 1.1 (this will affect the pipeline).
+If we are, we need to modify the pipeline as well. Also under consideration is whether it is easier to find contours when grayscale image is taken (equivalent
+to asking whether we will have a more clear split of tape and non-tape under grayscale rather than RGB; I would imagine the answer is no, since tape is white)
+
+Also, should we crop the image? Cropping image non-identically will mess with the distance from center of the camera to center of the tape. Ideally, 
+we do not crop, unless leaving the black undistortion regions will cause problems in the GRIP pipeline.
+'''
+
+# TODO: Put in values for constants, also figure out loading in values
+# also, finish find_longer_line and improve contour detection
+
 import numpy as np
 import cv2
 import glob
-
 import math
 from enum import Enum
 
@@ -48,13 +59,15 @@ np.save(mapy_file, mapy)
 
 ########################################### 1.2: UNDISTORT AND CROP EACH IMAGE ############################################
 
-img = cv2.imread("live_image")
-gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-dst = cv2.remap(gray,mapx,mapy,cv2.INTER_LINEAR) # changed image to gray,...
+def undistort(img, mapx, mapy):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    dst = cv2.remap(gray, mapx, mapy, cv2.INTER_LINEAR)
+
+    return dst # dst is the undistorted version of img
 
 # crop the image
-x,y,w,h = roi
-undistorted = dst[y:y+h, x:x+w]
+#x,y,w,h = roi
+#dst = dst[y:y+h, x:x+w]
 
 ######################################### 2.1: FIND CENTER OF IMAGE #####################################################
 class GripPipelinepython:
@@ -271,27 +284,46 @@ def find_center(img):
 def convert_dist(pixel_dist, height):
     return 0.0001 * (9.081 * height * pixel_dist)
 
-########################################## 2.3: ANGLE FROM TAPE SIDE TO CAMERA FACING #####################################################
 
-def get_cameraToTape_Theta():
+########################################## 2.3a: IDENTIFYING THE PROPER SIDE OF THE TAPE (LONG SIDE) #########################################
+
+def find_longer_line(img):
+    # returns m, y0, and x0 of longer line
+
+
+########################################## 2.3b: ANGLE FROM TAPE SIDE TO CAMERA FACING #####################################################
+
+def get_cameraToTape_Theta(m, y0, x0):
+    # y = y0 + m(x - x0)
+    # using one point x = x0, another point x = x0 + 100
     # find two points on the line. camera forward defines the y of the image, so finding the angle from the camera line is the same as finding the
-    # angle from just the y axis.
+    # angle from just the y axis. After two points on the line are found, find delta y and delta x, and then get atan.
+
+    x1 = x0 + 100 # hundred pixels rightward (can be any value, since ratio remains the same as long as x1 - x0 isn't too small)
+    y1 = y0 + m*(x1 - x0) # corresponding y change for
+
+    theta = atan((y1 - y0) / (x1 - x0))
+    return theta
 
 ########################################## 2.4: FINAL R AND THETA CALCULATION #####################################################
 
 # from robot center to (potentially offset) target point on tape strip
-def get_final_R_theta(robot_offset_x, robot_offset_y, tape_offset_x, tape_offset_y):
+# NOTE THAT THE PIXEL DELTA_X AND DELTA_Y CALCULATIONS ARE RELIANT ON THE ORIGINAL DIMENSIONS OF THE IMAGE BEING PRESERVED (if this constraint
+# needs to be lifted, we need to write a bit of code for accounting for scaling)
+def get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_offset_y, height):
     tape_offset_r = sqrt(tape_offset_x ** 2, tape_offset_y ** 2)
     tape_offset_theta = atan(tape_offset_y / tape_offset_x)
 
-    pixel_delta_x, pixel_delta_y = find_center(img)
+    pixel_x, pixel_y = find_center(img)
+    pixel_delta_x = img.shape[0] / 2 - pixel_x
+    pixel_delta_y = img.shape[1] / 2 - pixel_y
     camera_r = convert_dist(dist(pixel_delta_x, pixel_delta_y), height)
     camera_theta = atan(pixel_delta_y/pixel_delta_x)    # for negative pixel_delta_x, should take return a negative angle
 
     camera_delta_x = camera_r * cos(camera_theta)
     camera_delta_y = camera_r * sin(camera_theta)
 
-    cameraToTape_theta = get_cameraToTape_Theta(img)
+    cameraToTape_theta = get_cameraToTape_Theta(find_longer_line(img))
 
     tape_delta_x = tape_offset_r * cos(cameraToTape_theta + tape_offset_theta)
     tape_delta_y = tape_offset_r * sin(cameraToTape_theta + tape_offset_theta)
@@ -303,11 +335,18 @@ def get_final_R_theta(robot_offset_x, robot_offset_y, tape_offset_x, tape_offset
 
     return r, theta
 
-########################################## 3.1 #####################################################
+# (3 is same as 2.3)
+
+# full pipeline
+img = cv2.imread("live_image")
+mapx, mapy = LOAD_FROM_FILE # need to find the way to load from file properly (was not working before)
+robot_offset_x, robot_offset_y = VALUES
+tape_offset_x, tape_offset_y = OTHER_VALUES
+height = VALUE_3
+
+img = undistort(img, mapx, mapy)
+r, theta = get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_offset_y, height) # theta positive is clockwise turn, theta negative is counterclockwise turn
 
 
-
-
-
-
-########################################## 3.2 #####################################################
+img = cv2.imread("new_image_after_movement")
+turn_theta = get_cameraToTape_Theta(find_longer_line(img))

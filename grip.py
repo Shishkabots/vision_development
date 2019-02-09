@@ -11,7 +11,6 @@ class GripPipelinepython:
     
     """initializes all values to presets or None if need to be set
     """
-
     __resize_image_width = 640.0
     __resize_image_height = 480.0
     __resize_image_interpolation = cv2.INTER_CUBIC
@@ -60,7 +59,7 @@ class GripPipelinepython:
     filter_contours_output = None
 
 
-    def process(source0):
+    def process(self, source0):
         """
         Runs the pipeline and sets all outputs to new values.
         """
@@ -205,13 +204,14 @@ class GripPipelinepython:
             output.append(contour)
         return output
 
-    img = cv2.imread('star.jpg',0)
-    process(img)
-    x, y, w, h = cv2.boundingRect(filter_contours_output.get(0))
-    cx = x+w/2
-    cy = y+h/2
-    print("CX: ", cx)
-    print("CX: ", cx)
+img = cv2.imread('star.jpg', 1)
+pipeline = GripPipelinepython()
+pipeline.process(img)
+x, y, w, h = cv2.boundingRect(pipeline.filter_contours_output.get(0))
+cx = x+w/2
+cy = y+h/2
+print("CX: ", cx)
+print("CX: ", cx)
 
 
 
