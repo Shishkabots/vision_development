@@ -9,6 +9,7 @@ we do not crop, unless leaving the black undistortion regions will cause problem
 
 # TODO: Put in values for constants, also figure out loading in values
 # also, finish find_longer_line and improve contour detection
+# convert boundingRect to minAreaRect
 
 import numpy as np
 import cv2
@@ -273,8 +274,8 @@ class GripPipelinepython:
 
 def find_center(img):
     pipeline = GripPipelinepython()
-    pipeline.process(undistorted)
-    x, y, w, h = cv2.boundingRect(pipeline.filter_contours_output[0]) # not sure whether grabbing the first from the list works (do you not need the whole thing?)
+    pipeline.process(img)
+    x, y, w, h = cv2.minAreaRect(pipeline.filter_contours_output[0]) # not sure whether grabbing the first from the list works (do you not need the whole thing?)
     cx = x + w/2
     cy = y + h/2
     return cx, cy
@@ -286,23 +287,52 @@ def convert_dist(pixel_dist, height):
 
 
 ########################################## 2.3a: IDENTIFYING THE PROPER SIDE OF THE TAPE (LONG SIDE) #########################################
+class Tup:
+    def __init__(self, distance, slope, point1, point2):
+        self.distance = distance
+        self.slope = slope
+        self.point1 = point1
+        self.point2 = point2
 
+# returns slope of line
 def find_longer_line(img):
+    pipeline = GripPipelinepython()
+    pipeline.process(img)
+    contours = pipeline.filter_counters_output
+
     # returns m, y0, and x0 of longer line
+    rc = cv2.minAreaRect(contours[0])
+    box = cv2.boxPoints(rc)
+
+    tups = [] #list of tuples
+
+    for (i, p1) in enumerate(box):
+        for (j, p2) in enumerate(box):
+            if i < j:
+                ydiff = p2[1] - p1[1] # difference in y coords
+                xdiff = p2[0] - p1[0] # difference in x coords
+                distance = sqrt(xiff ** 2 + ydiff ** 2) # distance formula to find distance between 2 points
+                slope = ydiff / (xdiff * 1.0)
+                tups.append(Tup(distance, slope, p1, p2)) #add in the tuple into the list 
+
+    tups.sort(key=distance)
+    return tups[2].slope
 
 
 ########################################## 2.3b: ANGLE FROM TAPE SIDE TO CAMERA FACING #####################################################
 
-def get_cameraToTape_Theta(m, y0, x0):
+def get_cameraToTape_Theta(m):
     # y = y0 + m(x - x0)
     # using one point x = x0, another point x = x0 + 100
     # find two points on the line. camera forward defines the y of the image, so finding the angle from the camera line is the same as finding the
     # angle from just the y axis. After two points on the line are found, find delta y and delta x, and then get atan.
 
-    x1 = x0 + 100 # hundred pixels rightward (can be any value, since ratio remains the same as long as x1 - x0 isn't too small)
-    y1 = y0 + m*(x1 - x0) # corresponding y change for
+    # actually, only the slope is needed (angle is found with atan(slope), since the original argument (y2 - y1) / (x2 - x1) is equivalent to slope anyway)
 
-    theta = atan((y1 - y0) / (x1 - x0))
+    # x1 = x0 + 100 # hundred pixels rightward (can be any value, since ratio remains the same as long as x1 - x0 isn't too small)
+    # y1 = y0 + m*(x1 - x0) # corresponding y change for
+
+    theta = atan(m)
     return theta
 
 ########################################## 2.4: FINAL R AND THETA CALCULATION #####################################################
@@ -337,6 +367,9 @@ def get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_o
 
 # (3 is same as 2.3)
 
+
+############################################################################################################################
+
 # full pipeline
 img = cv2.imread("live_image")
 mapx, mapy = LOAD_FROM_FILE # need to find the way to load from file properly (was not working before)
@@ -344,9 +377,10 @@ robot_offset_x, robot_offset_y = VALUES
 tape_offset_x, tape_offset_y = OTHER_VALUES
 height = VALUE_3
 
+# find r, theta for moving to correct point
 img = undistort(img, mapx, mapy)
 r, theta = get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_offset_y, height) # theta positive is clockwise turn, theta negative is counterclockwise turn
 
-
+# find theta to align to the tape direction
 img = cv2.imread("new_image_after_movement")
 turn_theta = get_cameraToTape_Theta(find_longer_line(img))
