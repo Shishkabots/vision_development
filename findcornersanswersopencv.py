@@ -10,8 +10,6 @@ class Tup:
 		self.point1 = point1;
 		self.point2 = point2; 
 #NEW CODE ENDS
-self.
-
 
 im = cv2.imread("woodslab.jpg")
 gray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY);
