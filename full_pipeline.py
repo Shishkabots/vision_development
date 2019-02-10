@@ -60,8 +60,7 @@ np.save(mapy_file, mapy)
 ########################################### 1.2: UNDISTORT AND CROP EACH IMAGE ############################################
 
 def undistort(img, mapx, mapy):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    dst = cv2.remap(gray, mapx, mapy, cv2.INTER_LINEAR)
+    dst = cv2.remap(img, mapx, mapy, cv2.INTER_LINEAR)
 
     return dst # dst is the undistorted version of img
 
@@ -315,7 +314,7 @@ def find_longer_line(img):
             if i < j:
                 ydiff = p2[1] - p1[1] # difference in y coords
                 xdiff = p2[0] - p1[0] # difference in x coords
-                distance = sqrt(xiff ** 2 + ydiff ** 2) # distance formula to find distance between 2 points
+                distance = math.sqrt(xiff ** 2 + ydiff ** 2) # distance formula to find distance between 2 points
                 slope = ydiff / (xdiff * 1.0)
                 tups.append(Tup(distance, slope, p1, p2)) #add in the tuple into the list 
 
@@ -336,7 +335,7 @@ def get_cameraToTape_Theta(m):
     # x1 = x0 + 100 # hundred pixels rightward (can be any value, since ratio remains the same as long as x1 - x0 isn't too small)
     # y1 = y0 + m*(x1 - x0) # corresponding y change for the x change
 
-    theta = atan(m)
+    theta = math.atan(m)
     return theta
 
 ########################################## 2.4: FINAL R AND THETA CALCULATION #####################################################
@@ -345,27 +344,27 @@ def get_cameraToTape_Theta(m):
 # NOTE THAT THE PIXEL DELTA_X AND DELTA_Y CALCULATIONS ARE RELIANT ON THE ORIGINAL DIMENSIONS OF THE IMAGE BEING PRESERVED (if this constraint
 # needs to be lifted, we need to write a bit of code for accounting for scaling)
 def get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_offset_y, height):
-    tape_offset_r = sqrt(tape_offset_x ** 2, tape_offset_y ** 2)
-    tape_offset_theta = atan(tape_offset_y / tape_offset_x)
+    tape_offset_r = math.sqrt(tape_offset_x ** 2 + tape_offset_y ** 2)
+    tape_offset_theta = math.atan(tape_offset_y / tape_offset_x)
 
     pixel_x, pixel_y = find_center(img)
     pixel_delta_x = img.shape[0] / 2 - pixel_x
     pixel_delta_y = img.shape[1] / 2 - pixel_y
-    camera_r = convert_dist(sqrt(pixel_delta_x ** 2 + pixel_delta_y ** 2), height)
-    camera_theta = atan(pixel_delta_y/pixel_delta_x)    # for negative pixel_delta_x, should take return a negative angle
+    camera_r = convert_dist(math.sqrt(pixel_delta_x ** 2 + pixel_delta_y ** 2), height)
+    camera_theta = math.atan(pixel_delta_y/pixel_delta_x)    # for negative pixel_delta_x, should take return a negative angle
 
-    camera_delta_x = camera_r * cos(camera_theta)
-    camera_delta_y = camera_r * sin(camera_theta)
+    camera_delta_x = camera_r * math.cos(camera_theta)
+    camera_delta_y = camera_r * math.sin(camera_theta)
 
     cameraToTape_theta = get_cameraToTape_Theta(find_longer_line(img))
 
-    tape_delta_x = tape_offset_r * cos(cameraToTape_theta + tape_offset_theta)
-    tape_delta_y = tape_offset_r * sin(cameraToTape_theta + tape_offset_theta)
+    tape_delta_x = tape_offset_r * math.cos(cameraToTape_theta + tape_offset_theta)
+    tape_delta_y = tape_offset_r * math.sin(cameraToTape_theta + tape_offset_theta)
 
     delta_y = robot_offset_y + camera_delta_y + tape_delta_y
     delta_x = robot_offset_x + camera_delta_x + tape_delta_x
-    r = sqrt(delta_y ** 2 + delta_x ** 2)
-    theta = atan(delta_y/delta_x)
+    r = math.sqrt(delta_y ** 2 + delta_x ** 2)
+    theta = math.atan(delta_y/delta_x)
 
     return r, theta
 
@@ -373,13 +372,13 @@ def get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_o
 
 
 ############################################################################################################################
-
+'''
 # full pipeline
 img = cv2.imread("live_image")
 mapx, mapy = LOAD_FROM_FILE # need to find the way to load from file properly (was not working before)
 robot_offset_x, robot_offset_y = VALUES
 tape_offset_x, tape_offset_y = OTHER_VALUES
-height = VALUE_3
+height = VALUE_3 # in inches
 
 # find r, theta for moving to correct point
 img = undistort(img, mapx, mapy)
@@ -388,3 +387,19 @@ r, theta = get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x,
 # find theta to align to the tape direction
 img = cv2.imread("new_image_after_movement")
 turn_theta = get_cameraToTape_Theta(find_longer_line(img))
+'''
+
+####################################################################################################################
+
+# for testing
+img = cv2.imread("four_sides.png")
+# mapx and mapy already there
+robot_offset_x, robot_offset_y = 1, 2
+tape_offset_x, tape_offset_y = 0.2, 2.3
+height = 36
+
+img = undistort(img, mapx, mapy)
+print(img.shape)
+r, theta = get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_offset_y, height)
+print(r)
+print(theta)
