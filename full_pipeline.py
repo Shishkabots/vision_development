@@ -7,9 +7,8 @@ Also, should we crop the image? Cropping image non-identically will mess with th
 we do not crop, unless leaving the black undistortion regions will cause problems in the GRIP pipeline.
 '''
 
-# TODO: Put in values for constants, also figure out loading in values
-# also, finish find_longer_line and improve contour detection
-# convert boundingRect to minAreaRect
+# TODO: Put in values for constants, also figure out loading in values for mapx and mapy
+# also, improve contour detection
 
 import numpy as np
 import cv2
@@ -275,9 +274,14 @@ class GripPipelinepython:
 def find_center(img):
     pipeline = GripPipelinepython()
     pipeline.process(img)
-    x, y, w, h = cv2.minAreaRect(pipeline.filter_contours_output[0]) # not sure whether grabbing the first from the list works (do you not need the whole thing?)
-    cx = x + w/2
-    cy = y + h/2
+    # x, y, w, h = cv2.boundingRect(pipeline.filter_contours_output[0]) # not sure whether grabbing the first from the list works (do you not need the whole thing?)
+    # cx = x + w/2
+    # cy = y + h/2
+
+    moments = cv2.moments(pipeline.__filter_contours_output[0])
+    cx = int(M['m10']/M['m00'])
+    cy = int(M['m01']/M['m00'])
+
     return cx, cy
 
 ########################################## 2.2: SCALE PIXEL TO REAL DISTANCE #####################################################
@@ -330,7 +334,7 @@ def get_cameraToTape_Theta(m):
     # actually, only the slope is needed (angle is found with atan(slope), since the original argument (y2 - y1) / (x2 - x1) is equivalent to slope anyway)
 
     # x1 = x0 + 100 # hundred pixels rightward (can be any value, since ratio remains the same as long as x1 - x0 isn't too small)
-    # y1 = y0 + m*(x1 - x0) # corresponding y change for
+    # y1 = y0 + m*(x1 - x0) # corresponding y change for the x change
 
     theta = atan(m)
     return theta
