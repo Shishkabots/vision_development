@@ -351,7 +351,7 @@ def get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_o
     pixel_x, pixel_y = find_center(img)
     pixel_delta_x = img.shape[0] / 2 - pixel_x
     pixel_delta_y = img.shape[1] / 2 - pixel_y
-    camera_r = convert_dist(dist(pixel_delta_x, pixel_delta_y), height)
+    camera_r = convert_dist(sqrt(pixel_delta_x ** 2 + pixel_delta_y ** 2), height)
     camera_theta = atan(pixel_delta_y/pixel_delta_x)    # for negative pixel_delta_x, should take return a negative angle
 
     camera_delta_x = camera_r * cos(camera_theta)
