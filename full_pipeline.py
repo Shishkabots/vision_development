@@ -2,7 +2,6 @@
 Currently outstanding questions: should we be converting the image to gray in 1.1 (this will affect the pipeline).
 If we are, we need to modify the pipeline as well. Also under consideration is whether it is easier to find contours when grayscale image is taken (equivalent
 to asking whether we will have a more clear split of tape and non-tape under grayscale rather than RGB; I would imagine the answer is no, since tape is white)
-
 Also, should we crop the image? Cropping image non-identically will mess with the distance from center of the camera to center of the tape. Ideally, 
 we do not crop, unless leaving the black undistortion regions will cause problems in the GRIP pipeline.
 '''
@@ -28,14 +27,16 @@ objp[:,:2] = np.mgrid[0:7,0:7].T.reshape(-1,2)
 objpoints = [] # 3d point in real world space
 imgpoints = [] # 2d points in image plane.
 
-training_images = glob.glob('undistortion_dataset/*.jpg')
+training_images = glob.glob('undistortion_dataset/*.jpg') 
+
+gray = None
 
 for fname in training_images:
     img = cv2.imread(fname)
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
     # Find the chess board corners
-    ret, corners = cv2.findChessboardCorners(gray, (7,7),None)
+    ret, corners = cv2.findChessboardCorners(gray,(7,7),None)
 
     # If found, add object points, image points (after refining them)
     if ret == True:
@@ -51,7 +52,6 @@ newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
 
 # get undistort matrices/mappings
 mapx,mapy = cv2.initUndistortRectifyMap(mtx,dist,None,newcameramtx,(w,h),5)
-
 mapx_file = open("mapx_values.npy", "w")
 mapy_file = open("mapy_values.npy", "w")
 np.save(mapx_file, mapx)
@@ -60,9 +60,8 @@ np.save(mapy_file, mapy)
 ########################################### 1.2: UNDISTORT AND CROP EACH IMAGE ############################################
 
 def undistort(img, mapx, mapy):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2HSV) #NOT IN GRAYSCALE ANYMORE
     dst = cv2.remap(gray, mapx, mapy, cv2.INTER_LINEAR)
-
     return dst # dst is the undistorted version of img
 
 # crop the image
