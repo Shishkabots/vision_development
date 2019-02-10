@@ -314,6 +314,7 @@ def find_longer_line(img):
             if i < j:
                 ydiff = p2[1] - p1[1] # difference in y coords
                 xdiff = p2[0] - p1[0] # difference in x coords
+
                 distance = math.sqrt(xiff ** 2 + ydiff ** 2) # distance formula to find distance between 2 points
                 slope = ydiff / (xdiff * 1.0)
                 tups.append(Tup(distance, slope, p1, p2)) #add in the tuple into the list 
@@ -387,6 +388,7 @@ r, theta = get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x,
 # find theta to align to the tape direction
 img = cv2.imread("new_image_after_movement")
 turn_theta = get_cameraToTape_Theta(find_longer_line(img))
+<<<<<<< HEAD
 '''
 
 ####################################################################################################################
