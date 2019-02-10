@@ -315,7 +315,7 @@ def find_longer_line(img):
             if i < j:
                 ydiff = p2[1] - p1[1] # difference in y coords
                 xdiff = p2[0] - p1[0] # difference in x coords
-                distance = sqrt(xiff ** 2 + ydiff ** 2) # distance formula to find distance between 2 points
+                distance = sqrt(xdiff ** 2 + ydiff ** 2) # distance formula to find distance between 2 points
                 slope = ydiff / (xdiff * 1.0)
                 tups.append(Tup(distance, slope, p1, p2)) #add in the tuple into the list 
 
