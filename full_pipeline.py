@@ -8,7 +8,7 @@ we do not crop, unless leaving the black undistortion regions will cause problem
 '''
 
 # TODO: Put in values for constants, also figure out loading in values for mapx and mapy
-# also, improve contour detection
+# also, test/improve contour detection under different lightings
 
 import numpy as np
 import cv2
@@ -79,34 +79,38 @@ class GripPipelinepython:
         """initializes all values to presets or None if need to be set
         """
 
-        self.__resize_image_width = 640.0
-        self.__resize_image_height = 480.0
+        self.__resize_image_width = 320.0
+        self.__resize_image_height = 240.0
         self.__resize_image_interpolation = cv2.INTER_CUBIC
 
         self.resize_image_output = None
 
         self.__hsv_threshold_input = self.resize_image_output
-        self.__hsv_threshold_hue = [0.0, 69.39393939393939]
-        self.__hsv_threshold_saturation = [0.0, 143.3838383838384]
-        self.__hsv_threshold_value = [178.8669064748201, 255.0]
+        self.__hsv_threshold_hue = [0.0, 107.30375036037825]
+        self.__hsv_threshold_saturation = [0.0, 79.48806844066841]
+        self.__hsv_threshold_value = [131.47482050837374, 255.0]
 
         self.hsv_threshold_output = None
 
-        self.__cv_erode_src = self.hsv_threshold_output
+        self.__cv_dilate_src = self.hsv_threshold_output
+        self.__cv_dilate_kernel = None
+        self.__cv_dilate_anchor = (-1, -1)
+        self.__cv_dilate_iterations = 7.0
+        self.__cv_dilate_bordertype = cv2.BORDER_CONSTANT
+        self.__cv_dilate_bordervalue = (-1)
+
+        self.cv_dilate_output = None
+
+        self.__cv_erode_src = self.cv_dilate_output
         self.__cv_erode_kernel = None
         self.__cv_erode_anchor = (-1, -1)
-        self.__cv_erode_iterations = 1.0
+        self.__cv_erode_iterations = 9.0
         self.__cv_erode_bordertype = cv2.BORDER_CONSTANT
         self.__cv_erode_bordervalue = (-1)
 
         self.cv_erode_output = None
 
-        self.__mask_input = self.resize_image_output
-        self.__mask_mask = self.cv_erode_output
-
-        self.mask_output = None
-
-        self.__find_contours_input = self.hsv_threshold_output
+        self.__find_contours_input = self.cv_erode_output
         self.__find_contours_external_only = False
 
         self.find_contours_output = None
@@ -116,10 +120,10 @@ class GripPipelinepython:
         self.__filter_contours_min_perimeter = 0.0
         self.__filter_contours_min_width = 50.0
         self.__filter_contours_max_width = 1000.0
-        self.__filter_contours_min_height = 50.0
+        self.__filter_contours_min_height = 90.0
         self.__filter_contours_max_height = 1000.0
         self.__filter_contours_solidity = [0, 100]
-        self.__filter_contours_max_vertices = 4.0
+        self.__filter_contours_max_vertices = 1000000.0
         self.__filter_contours_min_vertices = 0.0
         self.__filter_contours_min_ratio = 0.0
         self.__filter_contours_max_ratio = 1000.0
@@ -139,22 +143,22 @@ class GripPipelinepython:
         self.__hsv_threshold_input = self.resize_image_output
         (self.hsv_threshold_output) = self.__hsv_threshold(self.__hsv_threshold_input, self.__hsv_threshold_hue, self.__hsv_threshold_saturation, self.__hsv_threshold_value)
 
+        # Step CV_dilate0:
+        self.__cv_dilate_src = self.hsv_threshold_output
+        (self.cv_dilate_output) = self.__cv_dilate(self.__cv_dilate_src, self.__cv_dilate_kernel, self.__cv_dilate_anchor, self.__cv_dilate_iterations, self.__cv_dilate_bordertype, self.__cv_dilate_bordervalue)
+
         # Step CV_erode0:
-        self.__cv_erode_src = self.hsv_threshold_output
+        self.__cv_erode_src = self.cv_dilate_output
         (self.cv_erode_output) = self.__cv_erode(self.__cv_erode_src, self.__cv_erode_kernel, self.__cv_erode_anchor, self.__cv_erode_iterations, self.__cv_erode_bordertype, self.__cv_erode_bordervalue)
 
-        # Step Mask0:
-        self.__mask_input = self.resize_image_output
-        self.__mask_mask = self.cv_erode_output
-        (self.mask_output) = self.__mask(self.__mask_input, self.__mask_mask)
-
         # Step Find_Contours0:
-        self.__find_contours_input = self.hsv_threshold_output
+        self.__find_contours_input = self.cv_erode_output
         (self.find_contours_output) = self.__find_contours(self.__find_contours_input, self.__find_contours_external_only)
 
         # Step Filter_Contours0:
         self.__filter_contours_contours = self.find_contours_output
         (self.filter_contours_output) = self.__filter_contours(self.__filter_contours_contours, self.__filter_contours_min_area, self.__filter_contours_min_perimeter, self.__filter_contours_min_width, self.__filter_contours_max_width, self.__filter_contours_min_height, self.__filter_contours_max_height, self.__filter_contours_solidity, self.__filter_contours_max_vertices, self.__filter_contours_min_vertices, self.__filter_contours_min_ratio, self.__filter_contours_max_ratio)
+
 
     @staticmethod
     def __resize_image(input, width, height, interpolation):
@@ -184,6 +188,21 @@ class GripPipelinepython:
         return cv2.inRange(out, (hue[0], sat[0], val[0]),  (hue[1], sat[1], val[1]))
 
     @staticmethod
+    def __cv_dilate(src, kernel, anchor, iterations, border_type, border_value):
+        """Expands area of higher value in an image.
+        Args:
+           src: A numpy.ndarray.
+           kernel: The kernel for dilation. A numpy.ndarray.
+           iterations: the number of times to dilate.
+           border_type: Opencv enum that represents a border type.
+           border_value: value to be used for a constant border.
+        Returns:
+            A numpy.ndarray after dilation.
+        """
+        return cv2.dilate(src, kernel, anchor, iterations = (int) (iterations +0.5),
+                            borderType = border_type, borderValue = border_value)
+
+    @staticmethod
     def __cv_erode(src, kernel, anchor, iterations, border_type, border_value):
         """Expands area of lower value in an image.
         Args:
@@ -199,17 +218,6 @@ class GripPipelinepython:
                             borderType = border_type, borderValue = border_value)
 
     @staticmethod
-    def __mask(input, mask):
-        """Filter out an area of an image using a binary mask.
-        Args:
-            input: A three channel numpy.ndarray.
-            mask: A black and white numpy.ndarray.
-        Returns:
-            A three channel numpy.ndarray.
-        """
-        return cv2.bitwise_and(input, input, mask=mask)
-
-    @staticmethod
     def __find_contours(input, external_only):
         """Sets the values of pixels in a binary image to their distance to the nearest black pixel.
         Args:
@@ -223,7 +231,7 @@ class GripPipelinepython:
         else:
             mode = cv2.RETR_LIST
         method = cv2.CHAIN_APPROX_SIMPLE
-        im2, contours, hierarchy =cv2.findContours(input, mode=mode, method=method)
+        contours, hierarchy = cv2.findContours(input, mode=mode, method=method)
         return contours
 
     @staticmethod
@@ -278,7 +286,8 @@ def find_center(img):
     # cx = x + w/2
     # cy = y + h/2
 
-    moments = cv2.moments(pipeline.__filter_contours_output[0])
+    print(pipeline.filter_contours_output)
+    moments = cv2.moments(pipeline.filter_contours_output[0])
     cx = int(M['m10']/M['m00'])
     cy = int(M['m01']/M['m00'])
 
@@ -402,7 +411,6 @@ tape_offset_x, tape_offset_y = 0.2, 2.3
 height = 36
 
 img = undistort(img, mapx, mapy)
-print(img.shape)
 r, theta = get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_offset_y, height)
 print(r)
 print(theta)
