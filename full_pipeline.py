@@ -60,7 +60,8 @@ np.save(mapy_file, mapy)
 ########################################### 1.2: UNDISTORT AND CROP EACH IMAGE ############################################
 
 def undistort(img, mapx, mapy):
-    dst = cv2.remap(img, mapx, mapy, cv2.INTER_LINEAR)
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV) #NOT IN GRAYSCALE ANYMORE
+    dst = cv2.remap(hsv, mapx, mapy, cv2.INTER_LINEAR)
 
     return dst # dst is the undistorted version of img
 
