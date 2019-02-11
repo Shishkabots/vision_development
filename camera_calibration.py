@@ -1,3 +1,5 @@
+# DO NOT RUN THIS CODE ON IMAGES OTHER THAN CHESSBOARDS (the images will be deleted, but now they won't be)
+
 import numpy as np
 import cv2
 import glob
@@ -34,9 +36,9 @@ for fname in images:
         #cv2.drawChessboardCorners(img, (7,7), corners,ret)
         #cv2.imshow('img',img)
         #cv2.waitKey(500)
-    else:
-        os.remove(fname)
-        print "removed file", fname
+    #else:
+        #os.remove(fname)
+        #print "removed file", fname
 
 cv2.destroyAllWindows()
 print len(images)
@@ -49,6 +51,13 @@ newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
 
 # undistort
 mapx,mapy = cv2.initUndistortRectifyMap(mtx,dist,None,newcameramtx,(w,h),5)
+
+print mapx
+
+mapx_file = open("mapx_values.npy", "w")
+mapy_file = open("mapy_values.npy", "w")
+np.save(mapx_file, mapx)
+np.save(mapy_file, mapy)
 
 for fname in images:
     img = cv2.imread(fname)
