@@ -8,6 +8,7 @@ we do not crop, unless leaving the black undistortion regions will cause problem
 '''
 
 # TODO: Put in values for constants, also figure out loading in values for mapx and mapy
+
 # also, test/improve contour detection under different lightings
 
 import numpy as np
@@ -52,8 +53,8 @@ newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
 # get undistort matrices/mappings
 mapx,mapy = cv2.initUndistortRectifyMap(mtx,dist,None,newcameramtx,(w,h),5)
 
-mapx_file = open("mapx_values.npy", "w")
-mapy_file = open("mapy_values.npy", "w")
+mapx_file = open('mapx_values.npy', 'wb')
+mapy_file = open('mapy_values.npy', 'wb')
 np.save(mapx_file, mapx)
 np.save(mapy_file, mapy)
 
@@ -344,6 +345,7 @@ def find_longer_line(img):
                 xdiff = p2[0] - p1[0] # difference in x coords
 
                 distance = math.sqrt(xdiff ** 2 + ydiff ** 2) # distance formula to find distance between 2 points
+
                 slope = ydiff / (xdiff * 1.0)
                 print(ydiff)
                 print(xdiff)
