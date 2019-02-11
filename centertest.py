@@ -1,3 +1,4 @@
+#https://www.learnopencv.com/find-center-of-blob-centroid-using-opencv-cpp-python/
 import numpy as np
 import cv2 as cv
 img = cv.imread('star.jpg',0)
