@@ -53,8 +53,8 @@ newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
 # get undistort matrices/mappings
 mapx,mapy = cv2.initUndistortRectifyMap(mtx,dist,None,newcameramtx,(w,h),5)
 
-mapx_file = open("mapx_values.npy", "w")
-mapy_file = open("mapy_values.npy", "w")
+mapx_file = open('mapx_values.npy', 'wb')
+mapy_file = open('mapy_values.npy', 'wb')
 np.save(mapx_file, mapx)
 np.save(mapy_file, mapy)
 
