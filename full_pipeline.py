@@ -393,7 +393,9 @@ def get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_o
     pixel_x *= 1280.0/320.0
     pixel_y *= 720.0/240.0
     pixel_delta_x = img.shape[0] / 2 - pixel_x
+    print (" pixel delta x:", pixel_delta_x)
     pixel_delta_y = img.shape[1] / 2 - pixel_y
+    print (" pixel delta y:", pixel_delta_y)
     camera_r = convert_dist(math.sqrt(pixel_delta_x ** 2 + pixel_delta_y ** 2), height)
     # again, intentional x/y (see the image, it's weird)
     camera_theta = math.copysign(math.pi / 2, pixel_delta_x) if pixel_delta_y == 0 else math.atan(pixel_delta_x/pixel_delta_y)    # for negative pixel_delta_x, should take return a negative angle (i.e. clockwise is neg. theta)
@@ -423,8 +425,8 @@ def get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_o
 # full pipeline
 img = cv2.imread("live_image")
 mapx, mapy = LOAD_FROM_FILE # need to find the way to load from file properly (was not working before)
-robot_offset_x, robot_offset_y = VALUES
-tape_offset_x, tape_offset_y = OTHER_VALUES
+robot_offset_x, robot_offset_y = 0
+tape_offset_x, tape_offset_y = 0
 height = VALUE_3 # in inches
 
 # find r, theta for moving to correct point
@@ -440,7 +442,7 @@ turn_theta = get_cameraToTape_Theta(find_longer_line(img))
 
 # for testing
 #img = cv2.imread("four_sides.png")
-img = cv2.imread("four_sides_1280_720.png")
+img = cv2.imread("succbutt2.png")
 # mapx and mapy already there
 robot_offset_x, robot_offset_y = 0, 0
 tape_offset_x, tape_offset_y = 0, 0
