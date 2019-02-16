@@ -2,7 +2,6 @@
 Currently outstanding questions: should we be converting the image to gray in 1.1 (this will affect the pipeline).
 If we are, we need to modify the pipeline as well. Also under consideration is whether it is easier to find contours when grayscale image is taken (equivalent
 to asking whether we will have a more clear split of tape and non-tape under grayscale rather than RGB; I would imagine the answer is no, since tape is white)
-
 Also, should we crop the image? Cropping image non-identically will mess with the distance from center of the camera to center of the tape. Ideally, 
 we do not crop, unless leaving the black undistortion regions will cause problems in the GRIP pipeline.
 '''
@@ -438,11 +437,9 @@ mapx, mapy = LOAD_FROM_FILE # need to find the way to load from file properly (w
 robot_offset_x, robot_offset_y = 0
 tape_offset_x, tape_offset_y = 0
 height = VALUE_3 # in inches
-
 # find r, theta for moving to correct point
 img = undistort(img, mapx, mapy)
 r, theta = get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_offset_y, height) # theta positive is clockwise turn, theta negative is counterclockwise turn
-
 # find theta to align to the tape direction
 img = cv2.imread("new_image_after_movement")
 turn_theta = get_Tape_Theta(find_longer_line(img))
