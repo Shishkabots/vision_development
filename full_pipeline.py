@@ -399,7 +399,7 @@ def get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_o
     print(" init return x: ", pixel_x)
     print(" init return y: ", pixel_y)
 
-    pixel_delta_x = img.shape[1] / 2 - pixel_x
+    pixel_delta_x = -(img.shape[1] / 2 - pixel_x) # flipped angle because if img.shape[1] > pixel_x (i.e. pixel is left of center), angle should be negative
     print( "img x", img.shape[1]/2)
     print (" pixel delta x:", pixel_delta_x)
     pixel_delta_y = img.shape[0] / 2 - pixel_y
