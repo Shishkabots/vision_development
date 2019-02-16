@@ -56,8 +56,8 @@ mapx,mapy = cv2.initUndistortRectifyMap(mtx,dist,None,newcameramtx,(w,h),5)
 
 mapx_file = open('mapx_values.npy', 'w')
 mapy_file = open('mapy_values.npy', 'w')
-np.savetxt(mapx_file, mapx, delimiter=",")
-np.savetxt(mapy_file, mapy, delimiter=",")
+np.savetxt(mapx_file, mapx, delimiter=",", fmt='%.4f')
+np.savetxt(mapy_file, mapy, delimiter=",", fmt='%.4f')
 
 ########################################### 1.2: UNDISTORT AND CROP EACH IMAGE ############################################
 
