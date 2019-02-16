@@ -2,14 +2,15 @@
 Currently outstanding questions: should we be converting the image to gray in 1.1 (this will affect the pipeline).
 If we are, we need to modify the pipeline as well. Also under consideration is whether it is easier to find contours when grayscale image is taken (equivalent
 to asking whether we will have a more clear split of tape and non-tape under grayscale rather than RGB; I would imagine the answer is no, since tape is white)
-
 Also, should we crop the image? Cropping image non-identically will mess with the distance from center of the camera to center of the tape. Ideally, 
 we do not crop, unless leaving the black undistortion regions will cause problems in the GRIP pipeline.
 '''
 
-# TODO: Put in values for constants, also figure out loading in values for mapx and mapy
-
-# also, test/improve contour detection under different lightings
+# TODO:
+# Put in values for constants, also figure out loading in values for mapx and mapy
+# Test/improve contour detection under different lightings
+# Fix vertical box being returned for points (magic fix, possibly after input image was rescaled to 1280*720)
+# Address resize issue (it's fine, just needed to rescale pixel value from 320*240 space to 1280*720 space)
 
 import numpy as np
 import cv2
@@ -53,16 +54,16 @@ newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
 # get undistort matrices/mappings
 mapx,mapy = cv2.initUndistortRectifyMap(mtx,dist,None,newcameramtx,(w,h),5)
 
-mapx_file = open("mapx_values.npy", "w")
-mapy_file = open("mapy_values.npy", "w")
+mapx_file = open('mapx_values.npy', 'wb')
+mapy_file = open('mapy_values.npy', 'wb')
 np.save(mapx_file, mapx)
 np.save(mapy_file, mapy)
 
 ########################################### 1.2: UNDISTORT AND CROP EACH IMAGE ############################################
 
 def undistort(img, mapx, mapy):
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV) #NOT IN GRAYSCALE ANYMORE
-    dst = cv2.remap(hsv, mapx, mapy, cv2.INTER_LINEAR)
+    #hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV) #NOT IN GRAYSCALE ANYMORE
+    dst = cv2.remap(img, mapx, mapy, cv2.INTER_LINEAR) # note that remap is forced 1080 x 720 input
 
     return dst # dst is the undistorted version of img
 
@@ -96,7 +97,7 @@ class GripPipelinepython:
         self.__cv_dilate_src = self.hsv_threshold_output
         self.__cv_dilate_kernel = None
         self.__cv_dilate_anchor = (-1, -1)
-        self.__cv_dilate_iterations = 7.0
+        self.__cv_dilate_iterations = 3.0
         self.__cv_dilate_bordertype = cv2.BORDER_CONSTANT
         self.__cv_dilate_bordervalue = (-1)
 
@@ -105,7 +106,7 @@ class GripPipelinepython:
         self.__cv_erode_src = self.cv_dilate_output
         self.__cv_erode_kernel = None
         self.__cv_erode_anchor = (-1, -1)
-        self.__cv_erode_iterations = 9.0
+        self.__cv_erode_iterations = 3.0
         self.__cv_erode_bordertype = cv2.BORDER_CONSTANT
         self.__cv_erode_bordervalue = (-1)
 
@@ -119,9 +120,9 @@ class GripPipelinepython:
         self.__filter_contours_contours = self.find_contours_output
         self.__filter_contours_min_area = 0.0
         self.__filter_contours_min_perimeter = 0.0
-        self.__filter_contours_min_width = 50.0
+        self.__filter_contours_min_width = 20.0
         self.__filter_contours_max_width = 1000.0
-        self.__filter_contours_min_height = 90.0
+        self.__filter_contours_min_height = 40.0
         self.__filter_contours_max_height = 1000.0
         self.__filter_contours_solidity = [0, 100]
         self.__filter_contours_max_vertices = 1000000.0
@@ -232,7 +233,7 @@ class GripPipelinepython:
         else:
             mode = cv2.RETR_LIST
         method = cv2.CHAIN_APPROX_SIMPLE
-        contours, hierarchy = cv2.findContours(input, mode=mode, method=method)
+        contours, hierarchy =cv2.findContours(input, mode=mode, method=method)
         return contours
 
     @staticmethod
@@ -287,10 +288,9 @@ def find_center(img):
     # cx = x + w/2
     # cy = y + h/2
 
-    print(pipeline.filter_contours_output)
     moments = cv2.moments(pipeline.filter_contours_output[0])
-    cx = int(M['m10']/M['m00'])
-    cy = int(M['m01']/M['m00'])
+    cx = int(moments['m10']/moments['m00'])
+    cy = int(moments['m01']/moments['m00'])
 
     return cx, cy
 
@@ -312,24 +312,55 @@ class Tup:
 def find_longer_line(img):
     pipeline = GripPipelinepython()
     pipeline.process(img)
-    contours = pipeline.filter_counters_output
+    contours = pipeline.filter_contours_output
 
     # returns m, y0, and x0 of longer line
     rc = cv2.minAreaRect(contours[0])
     box = cv2.boxPoints(rc)
+    box = np.int0(box)
 
     tups = [] #list of tuples
+
+    # print("type of variable rc:", type(rc))
+    # print("type of variable box:", type(box))
+    # print("minAreaRect elements, i.e. from variable rc: ")
+    # print("center_x and center_y:", rc[0])
+    # print("width and height:", rc[1])
+    # print("angle:", rc[2])
+    # print("boxPoints elements, i.e. from variable box: ")
+    # for p in box:
+    #     print(p[0], p[1])
+
+
+    # resizing img from 1280x720 to 320, 240
+    img = cv2.resize(img, (320, 240))
+    # print(img.shape)
+    # print(len(box))
+    # print("number of contours:", len(contours))d
+    # cv2.drawContours(img, contours[0], -1, (0, 0, 255), 2)
+    # cv2.imshow("draw contours", img)
+    # cv2.waitKey(0)
+
+    cv2.drawContours(img, [box], -1, (0, 0, 255), 2)
+    cv2.imshow("draw contours", img)
+    cv2.waitKey(0)
 
     for (i, p1) in enumerate(box):
         for (j, p2) in enumerate(box):
             if i < j:
                 ydiff = p2[1] - p1[1] # difference in y coords
                 xdiff = p2[0] - p1[0] # difference in x coords
-                distance = math.sqrt(xiff ** 2 + ydiff ** 2) # distance formula to find distance between 2 points
-                slope = ydiff / (xdiff * 1.0)
+
+                distance = math.sqrt(xdiff ** 2 + ydiff ** 2) # distance formula to find distance between 2 points
+                if(xdiff == 0) :
+                      slope = 10000000000
+                else :
+                      slope = ydiff/(xdiff * 1.0)
+                # print(ydiff)
+                # print(xdiff)
                 tups.append(Tup(distance, slope, p1, p2)) #add in the tuple into the list 
 
-    tups.sort(key=distance)
+    tups.sort(key=lambda tup: tup.distance)
     return tups[2].slope
 
 
@@ -356,16 +387,32 @@ def get_cameraToTape_Theta(m):
 # needs to be lifted, we need to write a bit of code for accounting for scaling)
 def get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_offset_y, height):
     tape_offset_r = math.sqrt(tape_offset_x ** 2 + tape_offset_y ** 2)
-    tape_offset_theta = math.atan(tape_offset_y / tape_offset_x)
+    # convention throughout is that negative theta is clockwise, so if x is negative, theta is negative
+    tape_offset_theta = math.copysign(math.pi / 2, tape_offset_x) if tape_offset_y == 0 else math.atan(tape_offset_x / tape_offset_y) # IT'S X/Y SINCE THETA IS BEING MEASURED FROM Y AXIS
 
-    pixel_x, pixel_y = find_center(img)
-    pixel_delta_x = img.shape[0] / 2 - pixel_x
-    pixel_delta_y = img.shape[1] / 2 - pixel_y
+    pixel_x, pixel_y = find_center(img) # note that the find_center returns things as 320x240 (width x height) images. Need to rescale back to 1280x720
+    print(" init return x: ", pixel_x)
+    print(" init return y: ", pixel_y)
+    pixel_x *= 1280.0/320.0
+    pixel_y *= 720.0/240.0
+
+    print(" init return x: ", pixel_x)
+    print(" init return y: ", pixel_y)
+
+    pixel_delta_x = img.shape[1] / 2 - pixel_x
+    print( "img x", img.shape[1]/2)
+    print (" pixel delta x:", pixel_delta_x)
+    pixel_delta_y = img.shape[0] / 2 - pixel_y
+    print( "img y", img.shape[0]/2)
+    print (" pixel delta y:", pixel_delta_y)
     camera_r = convert_dist(math.sqrt(pixel_delta_x ** 2 + pixel_delta_y ** 2), height)
-    camera_theta = math.atan(pixel_delta_y/pixel_delta_x)    # for negative pixel_delta_x, should take return a negative angle
+    # again, intentional x/y (see the image, it's weird)
+    camera_theta = math.copysign(math.pi / 2, pixel_delta_x) if pixel_delta_y == 0 else math.atan(pixel_delta_x/pixel_delta_y)    # for negative pixel_delta_x, should take return a negative angle (i.e. clockwise is neg. theta)
 
-    camera_delta_x = camera_r * math.cos(camera_theta)
-    camera_delta_y = camera_r * math.sin(camera_theta)
+    # just realized that the namings are weird, just swapped them around to be from the perspective of the camera (but new namings are also
+    # weird, since y is cos and x is sin)
+    camera_delta_y = camera_r * math.cos(camera_theta)
+    camera_delta_x = camera_r * math.sin(camera_theta)
 
     cameraToTape_theta = get_cameraToTape_Theta(find_longer_line(img))
 
@@ -375,7 +422,7 @@ def get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_o
     delta_y = robot_offset_y + camera_delta_y + tape_delta_y
     delta_x = robot_offset_x + camera_delta_x + tape_delta_x
     r = math.sqrt(delta_y ** 2 + delta_x ** 2)
-    theta = math.atan(delta_y/delta_x)
+    theta = math.copysign(math.pi / 2, delta_x) if delta_y == 0 else math.atan(delta_x/delta_y) # yes, it is delta_x/delta_y
 
     return r, theta
 
@@ -387,29 +434,29 @@ def get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_o
 # full pipeline
 img = cv2.imread("live_image")
 mapx, mapy = LOAD_FROM_FILE # need to find the way to load from file properly (was not working before)
-robot_offset_x, robot_offset_y = VALUES
-tape_offset_x, tape_offset_y = OTHER_VALUES
+robot_offset_x, robot_offset_y = 0
+tape_offset_x, tape_offset_y = 0
 height = VALUE_3 # in inches
-
 # find r, theta for moving to correct point
 img = undistort(img, mapx, mapy)
 r, theta = get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_offset_y, height) # theta positive is clockwise turn, theta negative is counterclockwise turn
-
 # find theta to align to the tape direction
 img = cv2.imread("new_image_after_movement")
-turn_theta = get_cameraToTape_Theta(find_longer_line(img))
+turn_theta = get_Tape_Theta(find_longer_line(img))
 '''
 
 ####################################################################################################################
 
 # for testing
-img = cv2.imread("four_sides.png")
+#img = cv2.imread("four_sides.png")
+img = cv2.imread("black_background_img4-png.png")
 # mapx and mapy already there
-robot_offset_x, robot_offset_y = 1, 2
-tape_offset_x, tape_offset_y = 0.2, 2.3
-height = 36
+robot_offset_x, robot_offset_y = 0, 0
+tape_offset_x, tape_offset_y = 0, 0
+height = 12
 
 img = undistort(img, mapx, mapy)
+# print("image size is ", img.shape)
 r, theta = get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_offset_y, height)
-print(r)
-print(theta)
+print("radius:", r)
+print("angle in degrees:", theta * 180 / math.pi)

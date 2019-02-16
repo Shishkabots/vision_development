@@ -15,13 +15,4 @@ if M["m00"] != 0:
  print("CY: ", cy)
 else:
  cX, cY = 0, 0
-=======
-contours, hierarchy = cv.findContours(thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-cnt = contours[0]
-M = cv.moments(cnt)
-print(M)
-cx = int(M['m10']/M['m00'])
-cy = int(M['m01']/M['m00'])
-print("CX: ", cx)
-print("CY: ", cy)
->>>>>>> e6f1e9a5bf41c431d60754a21540325ff90a3600
+
