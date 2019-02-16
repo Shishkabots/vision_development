@@ -55,10 +55,10 @@ newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
 # get undistort matrices/mappings
 mapx,mapy = cv2.initUndistortRectifyMap(mtx,dist,None,newcameramtx,(w,h),5)
 
-mapx_file = open('mapx_values.npy', 'wb')
-mapy_file = open('mapy_values.npy', 'wb')
-np.save(mapx_file, mapx)
-np.save(mapy_file, mapy)
+mapx_file = open('mapx_values.npy', 'w')
+mapy_file = open('mapy_values.npy', 'w')
+np.savetxt(mapx_file, mapx, delimiter=",")
+np.savetxt(mapy_file, mapy, delimiter=",")
 
 ########################################### 1.2: UNDISTORT AND CROP EACH IMAGE ############################################
 
@@ -452,11 +452,11 @@ turn_theta = get_Tape_Theta(find_longer_line(img))
 
 # for testing
 #img = cv2.imread("four_sides.png")
-img = cv2.imread("geyboi.jpg")
+img = cv2.imread("height_13.5_radius_2.5to3.5.jpg")
 # mapx and mapy already there
 robot_offset_x, robot_offset_y = 0, 0
 tape_offset_x, tape_offset_y = 0, 0
-height = 12
+height = 13.5
 
 img = undistort(img, mapx, mapy)
 # print("image size is ", img.shape)
