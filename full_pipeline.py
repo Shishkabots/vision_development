@@ -342,9 +342,9 @@ def find_longer_line(img):
     # cv2.imshow("draw contours", img)
     # cv2.waitKey(0)
 
-    # cv2.drawContours(img, [box], -1, (0, 0, 255), 2)
-    # cv2.imshow("draw contours", img)
-    # cv2.waitKey(0)
+    cv2.drawContours(img, [box], -1, (0, 0, 255), 2)
+    cv2.imshow("draw contours", img)
+    cv2.waitKey(0)
 
     for (i, p1) in enumerate(box):
         for (j, p2) in enumerate(box):
@@ -353,8 +353,10 @@ def find_longer_line(img):
                 xdiff = p2[0] - p1[0] # difference in x coords
 
                 distance = math.sqrt(xdiff ** 2 + ydiff ** 2) # distance formula to find distance between 2 points
-
-                slope = ydiff / (xdiff * 1.0)
+                if(xdiff == 0) :
+                      slope = 10000000000
+                else :
+                      slope = ydiff/(xdiff * 1.0)
                 # print(ydiff)
                 # print(xdiff)
                 tups.append(Tup(distance, slope, p1, p2)) #add in the tuple into the list 
@@ -390,11 +392,19 @@ def get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_o
     tape_offset_theta = math.copysign(math.pi / 2, tape_offset_x) if tape_offset_y == 0 else math.atan(tape_offset_x / tape_offset_y) # IT'S X/Y SINCE THETA IS BEING MEASURED FROM Y AXIS
 
     pixel_x, pixel_y = find_center(img) # note that the find_center returns things as 320x240 (width x height) images. Need to rescale back to 1280x720
+    print(" init return x: ", pixel_x)
+    print(" init return y: ", pixel_y)
     pixel_x *= 1280.0/320.0
     pixel_y *= 720.0/240.0
-    pixel_delta_x = img.shape[0] / 2 - pixel_x
+
+    print(" init return x: ", pixel_x)
+    print(" init return y: ", pixel_y)
+
+    pixel_delta_x = img.shape[1] / 2 - pixel_x
+    print( "img x", img.shape[1]/2)
     print (" pixel delta x:", pixel_delta_x)
-    pixel_delta_y = img.shape[1] / 2 - pixel_y
+    pixel_delta_y = img.shape[0] / 2 - pixel_y
+    print( "img y", img.shape[0]/2)
     print (" pixel delta y:", pixel_delta_y)
     camera_r = convert_dist(math.sqrt(pixel_delta_x ** 2 + pixel_delta_y ** 2), height)
     # again, intentional x/y (see the image, it's weird)
@@ -435,18 +445,18 @@ r, theta = get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x,
 
 # find theta to align to the tape direction
 img = cv2.imread("new_image_after_movement")
-turn_theta = get_cameraToTape_Theta(find_longer_line(img))
+turn_theta = get_Tape_Theta(find_longer_line(img))
 '''
 
 ####################################################################################################################
 
 # for testing
 #img = cv2.imread("four_sides.png")
-img = cv2.imread("succbutt2.png")
+img = cv2.imread("geyboi.jpg")
 # mapx and mapy already there
 robot_offset_x, robot_offset_y = 0, 0
 tape_offset_x, tape_offset_y = 0, 0
-height = 36
+height = 12
 
 img = undistort(img, mapx, mapy)
 # print("image size is ", img.shape)
