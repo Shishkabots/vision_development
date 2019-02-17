@@ -17,47 +17,50 @@ import cv2
 import glob
 import math
 from enum import Enum
+import time
+
+t_begin = time.time()
 
 ################################# 1.1: GET UNDISTORTION MAPPINGS #############################
 # termination criteria
-criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+# criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-# prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-objp = np.zeros((7*7,3), np.float32)
-objp[:,:2] = np.mgrid[0:7,0:7].T.reshape(-1,2)
+# # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
+# objp = np.zeros((7*7,3), np.float32)
+# objp[:,:2] = np.mgrid[0:7,0:7].T.reshape(-1,2)
 
-# Arrays to store object points and image points from all the images.
-objpoints = [] # 3d point in real world space
-imgpoints = [] # 2d points in image plane.
+# # Arrays to store object points and image points from all the images.
+# objpoints = [] # 3d point in real world space
+# imgpoints = [] # 2d points in image plane.
 
-training_images = glob.glob('undistortion_dataset/*.jpg')
+# training_images = glob.glob('undistortion_dataset/*.jpg')
 
-for fname in training_images:
-    img = cv2.imread(fname)
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+# for fname in training_images:
+#     img = cv2.imread(fname)
+#     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
-    # Find the chess board corners
-    ret, corners = cv2.findChessboardCorners(gray, (7,7),None)
+#     # Find the chess board corners
+#     ret, corners = cv2.findChessboardCorners(gray, (7,7),None)
 
-    # If found, add object points, image points (after refining them)
-    if ret == True:
-        objpoints.append(objp)
+#     # If found, add object points, image points (after refining them)
+#     if ret == True:
+#         objpoints.append(objp)
 
-        cv2.cornerSubPix(gray,corners,(7,7),(-1,-1),criteria)
-        imgpoints.append(corners)
+#         cv2.cornerSubPix(gray,corners,(7,7),(-1,-1),criteria)
+#         imgpoints.append(corners)
 
-# Function for calibrating the camera- returns camera matrix, distortion coeffs, rot/trans vectors
-ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
-h, w = gray.shape[:2]
-newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
+# # Function for calibrating the camera- returns camera matrix, distortion coeffs, rot/trans vectors
+# ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
+# h, w = gray.shape[:2]
+# newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
 
-# get undistort matrices/mappings
-mapx,mapy = cv2.initUndistortRectifyMap(mtx,dist,None,newcameramtx,(w,h),5)
+# # get undistort matrices/mappings
+# mapx,mapy = cv2.initUndistortRectifyMap(mtx,dist,None,newcameramtx,(w,h),5)
 
-mapx_file = open('mapx_values.npy', 'w')
-mapy_file = open('mapy_values.npy', 'w')
-np.savetxt(mapx_file, mapx, delimiter=",", fmt='%.4f')
-np.savetxt(mapy_file, mapy, delimiter=",", fmt='%.4f')
+# mapx_file = open('mapx_values.npy', 'w')
+# mapy_file = open('mapy_values.npy', 'w')
+# np.savetxt(mapx_file, mapx, delimiter=",", fmt='%.6f')
+# np.savetxt(mapy_file, mapy, delimiter=",", fmt='%.6f')
 
 ########################################### 1.2: UNDISTORT AND CROP EACH IMAGE ############################################
 
@@ -341,9 +344,9 @@ def find_longer_line(img):
     # cv2.imshow("draw contours", img)
     # cv2.waitKey(0)
 
-    cv2.drawContours(img, [box], -1, (0, 0, 255), 2)
-    cv2.imshow("draw contours", img)
-    cv2.waitKey(0)
+    # cv2.drawContours(img, [box], -1, (0, 0, 255), 2)
+    # cv2.imshow("draw contours", img)
+    # cv2.waitKey(0)
 
     for (i, p1) in enumerate(box):
         for (j, p2) in enumerate(box):
@@ -455,8 +458,30 @@ robot_offset_x, robot_offset_y = 0, 0
 tape_offset_x, tape_offset_y = 0, 0
 height = 13.5
 
+mapx_file = open('mapx_values.npy', 'r')
+mapy_file = open('mapy_values.npy', 'r')
+
+# print("before:")
+# print(mapx)
+# print(mapy)
+# print(mapx.shape)
+# print(mapy.shape)
+# print(mapx.dtype)
+
+mapx = np.loadtxt(mapx_file, delimiter=',', dtype=np.float32)
+mapy = np.loadtxt(mapy_file, delimiter=',', dtype=np.float32)
+
+# print(mapx)
+# print(mapy)
+# print(mapx.shape)
+# print(mapy.shape)
+# print(mapx.dtype)
+
 img = undistort(img, mapx, mapy)
 # print("image size is ", img.shape)
 r, theta = get_final_R_theta(img, robot_offset_x, robot_offset_y, tape_offset_x, tape_offset_y, height)
 print("radius:", r)
 print("angle in degrees:", theta * 180 / math.pi)
+
+t_end = time.time()
+print("time to run:", t_end - t_begin)
