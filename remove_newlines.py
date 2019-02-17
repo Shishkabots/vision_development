@@ -10,7 +10,11 @@ mapyStr = f2.read()
 for ch in mapxStr:
 	if ch != '\n':
 		f3.write(ch)
+	else:
+		f3.write(',')
 
 for ch in mapxStr:
 	if ch != '\n':
 		f4.write(ch)
+	else:
+		f4.write(',')
